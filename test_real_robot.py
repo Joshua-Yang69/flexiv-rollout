@@ -77,6 +77,8 @@ ARM_CONFIG = FlexivRizonConfig(
 
 GRIPPER_CONFIG = XenseGripperConfig(
     device_id="1659f0e0dde0",
+    blocking_timeout_s=RIZON_BLOCK_TIMEOUT,      # 同步等待，参考 xense.py block(5)
+    blocking_tolerance_mm=RIZON_GRIPPER_EPSILON * 1000.0,  # 10 mm 容差
 )
 
 SAFETY_LIMITS = SafetyLimits(
@@ -221,32 +223,44 @@ def case_joint(arm: FlexivRizonClient, executor: ControlExecutor,
     time.sleep(SETTLE_S)
 
 
-def case_gripper(gripper: XenseGripperClient, executor: ControlExecutor) -> None:
-    """夹爪：微开 → 微关，用 hold action 携带 target_gripper_width。"""
-    print("\n=== case_gripper: open 40 mm → close 20 mm → restore ===")
+def case_gripper(gripper: XenseGripperClient) -> None:
+    """
+    夹爪开合测试：直接调用 gripper.move()（blocking 同步等待）。
+
+    executor 的 hold 分支不调用任何硬件，因此夹爪测试绕过 executor，
+    与参考实现 xense.py __main__ 的调用方式一致：
+        gripper.block(5)
+        gripper.move(0.08)   # 全开
+        gripper.move(0.005)  # 全关
+    """
+    print("\n=== case_gripper: open 80 mm → close 20 mm → restore ===")
+
     g_state = gripper.read_state()
     original_w = g_state.width_m
     print(f"  当前夹爪宽度: {original_w*1000:.1f} mm")
 
-    for label, width_m in [("open 40mm", 0.040), ("close 20mm", 0.020)]:
-        action = PolicyAction(
-            mode="hold",          # hold 模式只执行 gripper 不动 TCP
-            timestamp_ms=now_ms(),
-            target_gripper_width=width_m,
+    steps = [
+        ("open  80 mm", 0.080),
+        ("close 20 mm", 0.020),
+    ]
+    for label, width_m in steps:
+        clamped = float(np.clip(width_m, 0.0, gripper.config.max_width_m))
+        print(f"  → {label} ({clamped*1000:.0f} mm)…", end=" ", flush=True)
+        reached = gripper.move(
+            clamped,
+            velocity_m_s=0.05,   # 慢速，测试用
+            force_n=20.0,
         )
-        executor.action_buffer.put(action)
-        result = executor.apply_once()
-        tag = "✓" if result.accepted else "✗"
-        print(f"  [{tag}] {label}  reason={result.reason!r}")
-        time.sleep(SETTLE_S)
+        actual = gripper.read_state().width_m
+        tag = "✓ reached" if reached else "⚠ timeout"
+        print(f"{tag}  actual={actual*1000:.1f} mm")
 
-    # 恢复
-    executor.action_buffer.put(
-        PolicyAction(mode="hold", timestamp_ms=now_ms(), target_gripper_width=original_w)
-    )
-    executor.apply_once()
-    print(f"  恢复夹爪: {original_w*1000:.1f} mm")
-    time.sleep(SETTLE_S)
+    # 恢复原始宽度
+    print(f"  → restore {original_w*1000:.1f} mm…", end=" ", flush=True)
+    reached = gripper.move(original_w, velocity_m_s=0.05, force_n=20.0)
+    actual = gripper.read_state().width_m
+    tag = "✓ reached" if reached else "⚠ timeout"
+    print(f"{tag}  actual={actual*1000:.1f} mm")
 
 
 # ── 主程序 ────────────────────────────────────────────────────────────────────
@@ -326,7 +340,7 @@ def main() -> None:
             case_joint(arm, executor, joint_idx=args.joint_idx, delta_rad=delta_rad)
 
         if run_all or args.case == "gripper":
-            case_gripper(gripper, executor)
+            case_gripper(gripper)
 
         print("\n✅ 测试完成。")
 
