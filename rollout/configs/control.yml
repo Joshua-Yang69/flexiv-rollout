@@ -1,7 +1,9 @@
 runtime:
   fps: 50
   max_action_age_ms: 250
-  allow_joint_commands: false
+  # NRT mode (tcp / joint) is selected automatically from the PolicyAction.mode
+  # field — no manual flag needed. FlexivRizonClient switches between
+  # NRT_CARTESIAN_MOTION_FORCE and NRT_JOINT_IMPEDANCE on demand.
   max_linear_vel: 0.1
   max_linear_acc: 0.5
   max_angular_vel: 0.1

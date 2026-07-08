@@ -73,16 +73,30 @@ class FlexivRizonConfig:
 
 
 class FlexivRizonClient:
-    """Minimal Flexiv Rizon wrapper for state read and NRT TCP commands."""
+    """Minimal Flexiv Rizon wrapper for state read and NRT TCP/joint commands.
+
+    Supports two NRT control modes that can be switched at runtime:
+      - NRT_CARTESIAN_MOTION_FORCE  (TCP pose + wrench)
+      - NRT_JOINT_IMPEDANCE         (joint positions)
+
+    ``ensure_tcp_mode()`` / ``ensure_joint_mode()`` are idempotent: they only
+    call ``SwitchMode`` when the current mode differs, so there is no overhead
+    when the policy produces the same mode every step.
+    """
+
+    _MODE_TCP   = "tcp"
+    _MODE_JOINT = "joint"
+    _MODE_NONE  = None
 
     def __init__(self, config: FlexivRizonConfig) -> None:
         self.config = config
         self._rdk = optional_import("flexivrdk", "Install Flexiv RDK on the robot deployment machine.")
         self.robot = self._rdk.Robot(config.robot_id)
+        self._active_mode: str | None = self._MODE_NONE
         if config.auto_enable:
             self._enable_robot()
         if config.tcp_mode_on_start:
-            self.switch_tcp_mode()
+            self.ensure_tcp_mode()
 
     def _enable_robot(self) -> None:
         if self.robot.fault() and not self.robot.ClearFault():
@@ -99,11 +113,30 @@ class FlexivRizonClient:
             raise RuntimeError(f"Flexiv tool '{self.config.tool_name}' not found.")
         tool.Switch(self.config.tool_name)
 
+    # ------------------------------------------------------------------
+    # Mode management — idempotent, call freely before each send_*
+    # ------------------------------------------------------------------
+
+    def ensure_tcp_mode(self) -> None:
+        """Switch to NRT_CARTESIAN_MOTION_FORCE if not already active."""
+        if self._active_mode != self._MODE_TCP:
+            self.robot.SwitchMode(self._rdk.Mode.NRT_CARTESIAN_MOTION_FORCE)
+            self._active_mode = self._MODE_TCP
+
+    def ensure_joint_mode(self) -> None:
+        """Switch to NRT_JOINT_IMPEDANCE if not already active."""
+        if self._active_mode != self._MODE_JOINT:
+            self.robot.SwitchMode(self._rdk.Mode.NRT_JOINT_IMPEDANCE)
+            self._active_mode = self._MODE_JOINT
+
+    # kept for backwards-compat; prefer ensure_* going forward
     def switch_tcp_mode(self) -> None:
-        self.robot.SwitchMode(self._rdk.Mode.NRT_CARTESIAN_MOTION_FORCE)
+        self._active_mode = self._MODE_NONE  # force re-switch
+        self.ensure_tcp_mode()
 
     def switch_joint_mode(self) -> None:
-        self.robot.SwitchMode(self._rdk.Mode.NRT_JOINT_IMPEDANCE)
+        self._active_mode = self._MODE_NONE  # force re-switch
+        self.ensure_joint_mode()
 
     def read_state(self) -> ArmState:
         state = self.robot.states()
@@ -122,6 +155,7 @@ class FlexivRizonClient:
         max_angular_vel: float,
         max_angular_acc: float,
     ) -> None:
+        self.ensure_tcp_mode()
         self.robot.SendCartesianMotionForce(
             mat_to_flexiv_pose(pose).tolist(),
             np.asarray(wrench, dtype=np.float64).tolist(),
@@ -132,6 +166,7 @@ class FlexivRizonClient:
         )
 
     def send_joint_positions(self, joints: np.ndarray, velocities: np.ndarray | None = None) -> None:
+        self.ensure_joint_mode()
         joints = np.asarray(joints, dtype=np.float64)
         velocities = np.zeros(7, dtype=np.float64) if velocities is None else np.asarray(velocities, dtype=np.float64)
         max_vel = np.full(7, self.config.joint_max_vel, dtype=np.float64)

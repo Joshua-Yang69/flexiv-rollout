@@ -17,7 +17,9 @@ from utils.timing import RateLimiter, now_ms
 class ControlRuntimeConfig:
     fps: float = 50.0
     max_action_age_ms: float = 250.0
-    allow_joint_commands: bool = False
+    # Both TCP and joint modes are enabled by default.
+    # The active NRT mode on the Flexiv RDK is switched automatically when the
+    # policy changes its output mode (tcp <-> joint), so no manual flag is needed.
     max_linear_vel: float = 0.1
     max_linear_acc: float = 0.5
     max_angular_vel: float = 0.1
@@ -28,7 +30,16 @@ class ControlRuntimeConfig:
 
 
 class ControlExecutor:
-    """Consume latest model action and send bounded commands to robot devices."""
+    """Consume latest model action and send bounded commands to robot devices.
+
+    Supports two NRT control paths transparently:
+      - ``mode="tcp"``   → NRT_CARTESIAN_MOTION_FORCE via arm.send_cartesian_motion_force()
+      - ``mode="joint"`` → NRT_JOINT_IMPEDANCE       via arm.send_joint_positions()
+
+    The FlexivRizonClient switches the RDK mode automatically and only when it
+    changes, so the policy can freely alternate between tcp and joint outputs
+    without any manual flag.
+    """
 
     def __init__(
         self,
@@ -74,8 +85,6 @@ class ControlExecutor:
                 ActionResult(True, now_ms(), "; ".join(messages), applied_action=safe_action)
             )
         if safe_action.mode == "joint":
-            if not self.config.allow_joint_commands:
-                return self._publish(ActionResult(False, now_ms(), "joint commands are disabled"))
             self._apply_joint(safe_action)
             return self._publish(
                 ActionResult(True, now_ms(), "; ".join(messages), applied_action=safe_action)

@@ -92,7 +92,6 @@ SAFETY_LIMITS = SafetyLimits(
 CONTROL_CONFIG = ControlRuntimeConfig(
     fps=50.0,
     max_action_age_ms=2000.0,   # 测试脚本里手动 put，宽松一些
-    allow_joint_commands=True,  # 开启关节模式，供 joint case 使用
     max_linear_vel=RIZON_TCP_MAX_VEL[0],
     max_linear_acc=RIZON_TCP_MAX_ACC[0],
     max_angular_vel=RIZON_TCP_MAX_VEL[1],
