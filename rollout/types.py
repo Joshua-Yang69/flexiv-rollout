@@ -59,14 +59,26 @@ class VisualFrame:
 class TactileFrame:
     rectify: np.ndarray | None
     timestamp_ms: float
+    name: str = "tactile"
 
 
 @dataclass(frozen=True)
 class Observation:
     robot: RobotState
     visual: VisualFrame | None = None
-    tactile: TactileFrame | None = None
+    tactile: TactileFrame | dict[str, TactileFrame] | None = None
     extras: dict[str, Any] = field(default_factory=dict)
+
+    def tactile_frame(self, name: str, fallback: str | None = None) -> TactileFrame | None:
+        if self.tactile is None:
+            return None
+        if isinstance(self.tactile, TactileFrame):
+            return self.tactile
+        if name in self.tactile:
+            return self.tactile[name]
+        if fallback is not None and fallback in self.tactile:
+            return self.tactile[fallback]
+        return None
 
 
 ActionMode = Literal["tcp", "joint", "hold"]
@@ -103,4 +115,3 @@ class ActionResult:
     timestamp_ms: float
     reason: str = ""
     applied_action: PolicyAction | None = None
-

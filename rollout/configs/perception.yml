@@ -1,5 +1,5 @@
 runtime:
-  fps: 30
+  fps: 50
   max_state_skew_ms: 5
   publish_visual: true
   publish_tactile: true
@@ -40,10 +40,15 @@ tactile:
   enabled: true
   driver: mock
   xense:
-    device_id:
     ip_address:
-    mac_addr:
     config_path:
     video_path:
     use_gpu: false
-
+    fps: 50
+  sensors:
+    xense_left:
+      device_id: OG001452
+      mac_addr: 1659f0e0dde0
+    xense_right:
+      device_id: OG001454
+      mac_addr: 1659f0e0dde0

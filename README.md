@@ -111,6 +111,15 @@ perception:
     driver: realsense_d415
   tactile:
     driver: xense
+    xense:
+      fps: 50
+    sensors:
+      xense_left:
+        device_id: OG001452
+        mac_addr: 1659f0e0dde0
+      xense_right:
+        device_id: OG001454
+        mac_addr: 1659f0e0dde0
 ```
 
 The control stage reuses the perception arm and gripper instances when running

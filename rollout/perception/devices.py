@@ -54,7 +54,7 @@ class VisualClient(Protocol):
 
 
 class TactileClient(Protocol):
-    def read_frame(self) -> TactileFrame:
+    def read_frame(self) -> TactileFrame | dict[str, TactileFrame]:
         ...
 
     def stop(self) -> None:
@@ -258,12 +258,14 @@ class RealSenseD415Client:
 
 @dataclass
 class XenseTactileConfig:
+    name: str = "xense"
     device_id: str | None = None
     ip_address: str | None = None
     mac_addr: str | None = None
     config_path: str | None = None
     video_path: str | None = None
     use_gpu: bool = False
+    fps: int = 50
 
 
 class XenseTactileClient:
@@ -280,10 +282,29 @@ class XenseTactileClient:
 
     def read_frame(self) -> TactileFrame:
         rectify = self.sensor.selectSensorInfo(self._sensor_cls.OutputType.Rectify)
-        return TactileFrame(rectify=np.asarray(rectify).copy(), timestamp_ms=now_ms())
+        return TactileFrame(rectify=np.asarray(rectify).copy(), timestamp_ms=now_ms(), name=self.config.name)
 
     def stop(self) -> None:
         self.sensor.release()
+
+
+class MultiTactileClient:
+    def __init__(self, clients: dict[str, TactileClient]) -> None:
+        self.clients = clients
+
+    def read_frame(self) -> dict[str, TactileFrame]:
+        frames: dict[str, TactileFrame] = {}
+        for name, client in self.clients.items():
+            frame = client.read_frame()
+            if isinstance(frame, dict):
+                frames.update(frame)
+            else:
+                frames[name] = frame
+        return frames
+
+    def stop(self) -> None:
+        for client in self.clients.values():
+            client.stop()
 
 
 class MockArmClient:
@@ -348,11 +369,12 @@ class MockVisualClient:
 
 
 class MockTactileClient:
-    def __init__(self, shape: tuple[int, int, int] = (240, 320, 3)) -> None:
+    def __init__(self, shape: tuple[int, int, int] = (240, 320, 3), name: str = "tactile") -> None:
         self.shape = shape
+        self.name = name
 
     def read_frame(self) -> TactileFrame:
-        return TactileFrame(rectify=np.zeros(self.shape, dtype=np.uint8), timestamp_ms=now_ms())
+        return TactileFrame(rectify=np.zeros(self.shape, dtype=np.uint8), timestamp_ms=now_ms(), name=self.name)
 
     def stop(self) -> None:
         return None
@@ -391,9 +413,24 @@ def make_tactile_client(config: dict[str, Any]) -> TactileClient | None:
     if not config.get("enabled", True):
         return None
     driver = config.get("driver", "mock")
+    sensors = config.get("sensors")
     if driver == "mock":
+        if isinstance(sensors, dict) and sensors:
+            return MultiTactileClient(
+                {name: MockTactileClient(name=name) for name, sensor_cfg in sensors.items() if sensor_cfg.get("enabled", True)}
+            )
         return MockTactileClient()
     if driver == "xense":
+        if isinstance(sensors, dict) and sensors:
+            clients: dict[str, TactileClient] = {}
+            common = dict(config.get("xense", {}))
+            for name, sensor_cfg in sensors.items():
+                if not sensor_cfg.get("enabled", True):
+                    continue
+                sensor_config = {**common, **sensor_cfg, "name": name}
+                clients[name] = XenseTactileClient(XenseTactileConfig(**sensor_config))
+            if not clients:
+                return None
+            return MultiTactileClient(clients)
         return XenseTactileClient(XenseTactileConfig(**config.get("xense", {})))
     raise ValueError(f"Unknown tactile driver: {driver}")
-

@@ -30,6 +30,7 @@ def main() -> None:
                     "state_skew_ms": observation.robot.skew_ms,
                     "has_visual": observation.visual is not None,
                     "has_tactile": observation.tactile is not None,
+                    "tactile_keys": list(observation.tactile.keys()) if isinstance(observation.tactile, dict) else [],
                 }
             )
             return

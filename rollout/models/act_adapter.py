@@ -75,18 +75,29 @@ class ACTPolicyAdapter(BasePolicy):
                 encoded[name] = visual
 
         if self.tactile_names:
-            if observation.tactile is None or observation.tactile.rectify is None:
-                raise ValueError("ACT tactile input requested but observation has no tactile frame.")
-            tactile = self._prepare_image_tensor(
-                torch,
-                functional,
-                observation.tactile.rectify,
-                normalize=False,
-            )
             for name in self.tactile_names:
-                encoded[name] = tactile
+                frame = self._resolve_tactile_frame(observation, name)
+                if frame is None or frame.rectify is None:
+                    raise ValueError(f"ACT tactile input '{name}' requested but observation has no matching frame.")
+                encoded[name] = self._prepare_image_tensor(
+                    torch,
+                    functional,
+                    frame.rectify,
+                    normalize=False,
+                )
 
         return encoded
+
+    def _resolve_tactile_frame(self, observation: Observation, act_name: str) -> Any:
+        aliases = {
+            "tac_left": ("xense_left", "left", "left_tactile"),
+            "tac_right": ("xense_right", "right", "right_tactile"),
+        }
+        for candidate in (act_name, *aliases.get(act_name, ())):
+            frame = observation.tactile_frame(candidate)
+            if frame is not None:
+                return frame
+        return None
 
     def _prepare_image_tensor(self, torch: Any, functional: Any, image: np.ndarray, normalize: bool) -> Any:
         tensor = torch.as_tensor(image)
@@ -152,4 +163,3 @@ def resolve_reference_path(path_value: str | None) -> str | None:
         return str(path)
     candidate = Path(__file__).resolve().parents[2] / path_value
     return str(candidate) if candidate.exists() else path_value
-
