@@ -55,11 +55,11 @@ references/
 
 From the repository root:
 
-```powershell
-python rollout\run_perception.py --once
-python rollout\run_model_server.py
-python rollout\run_control.py
-python -B rollout\run_rollout.py --duration-s 1
+```bash
+python rollout/run_perception.py --once
+python rollout/run_model_server.py
+python rollout/run_control.py
+python -B rollout/run_rollout.py --duration-s 1
 ```
 
 Expected behavior:
@@ -172,15 +172,17 @@ Flexiv TCP force/motion control via `NRT_CARTESIAN_MOTION_FORCE`.
 
 Syntax check:
 
-```powershell
-python -m py_compile (Get-ChildItem -Recurse -File -Include *.py -Path rollout,utils).FullName
+```bash
+python -m compileall -q rollout utils
 ```
 
 Mock full-stack smoke test:
 
-```powershell
-python -B rollout\run_rollout.py --duration-s 1
+```bash
+python -B rollout/run_rollout.py --duration-s 1
 ```
+
+On Windows, the same commands also work if `/` is replaced with `\`.
 
 ## Notes
 
@@ -189,4 +191,3 @@ python -B rollout\run_rollout.py --duration-s 1
   weights are ignored by `.gitignore`.
 - Keep deployment-specific IDs, IP addresses, and checkpoint paths in YAML
   config files rather than hard-coding them in rollout modules.
-
