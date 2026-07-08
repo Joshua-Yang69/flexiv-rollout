@@ -1,0 +1,32 @@
+runtime:
+  fps: 50
+  max_action_age_ms: 250
+  allow_joint_commands: false
+  max_linear_vel: 0.1
+  max_linear_acc: 0.5
+  max_angular_vel: 0.1
+  max_angular_acc: 0.5
+  gripper_velocity_m_s: 0.08
+  gripper_force_n: 27
+  safety:
+    max_tcp_translation_step_m: 0.02
+    max_joint_step_rad: 0.05
+    gripper_min_width_m: 0.0
+    gripper_max_width_m: 0.085
+    max_wrench_abs: 30
+
+arm:
+  driver: mock
+  flexiv:
+    robot_id: Rizon4s-063231
+    tool_name: Flange
+    auto_enable: true
+    operational_wait_s: 10
+    tcp_mode_on_start: true
+
+gripper:
+  driver: mock
+  mock_width_m: 0.04
+  xense:
+    device_id: 5e77ff097831
+

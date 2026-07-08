@@ -1,0 +1,58 @@
+# ACT + cached frozen ViTacDreamer prior512 feature policy, 16k steps
+state_dim: 8
+kl_weight: 10.0
+chunk_size: 50
+hidden_dim: 512
+dim_feedforward: 3200
+
+temporal_agg: true
+device: cuda:0
+
+# DETR parser args
+ckpt_dir: null
+policy_class: ACT
+num_steps: 16000
+
+# Model training params
+batch_size: 64
+num_workers: 4
+save_freq: 2000
+position_embedding: sine
+lr_vision_backbone: 0.00001
+weight_decay: 0.0001
+lr: 0.00001
+masks: false
+dilation: false
+backbone: resnet18
+nheads: 8
+enc_layers: 4
+dec_layers: 7
+pre_norm: false
+dropout: 0.1
+camera_names:
+  - cam_high
+
+# tactile args
+tactile_names:
+  - tac_left
+  - tac_right
+lr_tactile_backbone: 0.00001
+tactile_masks: false
+tactile_backbone: resnet18
+tactile_ckpt: null
+tactile_dilation: false
+
+# ViTacDreamer v2 cached feature args
+use_vitacdreamer_feature: true
+vitacdreamer_history_len: 5
+vitacdreamer_sample_stride: 5
+vitacdreamer_feature_dim: 512
+vitacdreamer_cross_attn_layers: middle
+finetune_vitacdreamer_encoder: false
+vitacdreamer_checkpoint: checkpoints/vitacdreamer/prior512_noperceptual_randommask_lr3e5/stage2_v2_prior512_encoder_only.pth
+vitacdreamer_feature_cache_dir: ./data/act_processed/{task_stem}/{task_config_ep}/vitacdreamer_features_prior512_noperceptual_randommask_lr3e5
+vitacdreamer_task_order:
+  - insert_HDMI
+  - insert_hole
+  - lift_bottle
+  - pull_out_key

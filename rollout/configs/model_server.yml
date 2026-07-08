@@ -1,0 +1,31 @@
+runtime:
+  fps: 30
+  observation_timeout_s: 1
+  publish_hold_on_error: false
+
+policy:
+  type: constant_hold
+  act:
+    device: cuda:0
+    control_mode: joint
+    camera_names:
+      - cam_high
+    tactile_names:
+      - tac_left
+      - tac_right
+    image_size: 256
+    normalize_visual: true
+    model_args:
+      device: cuda:0
+      chunk_size: 1
+      state_dim: 8
+      camera_names:
+        - cam_high
+      tactile_names:
+        - tac_left
+        - tac_right
+  vt_muse:
+    checkpoint:
+    freeze_encoder: true
+    device: cuda:0
+

@@ -1,0 +1,6 @@
+policy_name: ACT
+seed: 0
+ckpt_setting: default-balanced-50
+instruction_type: seen
+instuction_file: null
+train_config_name: train_config_vitacdreamer_prior512_cached_frozen_16k

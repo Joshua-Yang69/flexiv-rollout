@@ -1,0 +1,258 @@
+{
+    "sim-lift_bottle-default-50": {
+        "dataset_dir": "./data/sim-lift_bottle/default-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_HDMI-default-50": {
+        "dataset_dir": "./data/sim-insert_HDMI/default-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_hole-default-50": {
+        "dataset_dir": "./data/sim-insert_hole/default-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-pull_out_key-default-50": {
+        "dataset_dir": "./data/sim-pull_out_key/default-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-lift_bottle-default-ee-50": {
+        "dataset_dir": "./data/sim-lift_bottle/default-ee-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "ee",
+        "state_action_layout": "ee_xyzquat_gripper",
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_HDMI-default-ee-50": {
+        "dataset_dir": "./data/sim-insert_HDMI/default-ee-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "ee",
+        "state_action_layout": "ee_xyzquat_gripper",
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_hole-default-ee-50": {
+        "dataset_dir": "./data/sim-insert_hole/default-ee-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "ee",
+        "state_action_layout": "ee_xyzquat_gripper",
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-pull_out_key-default-ee-50": {
+        "dataset_dir": "./data/sim-pull_out_key/default-ee-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "ee",
+        "state_action_layout": "ee_xyzquat_gripper",
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-lift_bottle-default-ee-balanced-50": {
+        "dataset_dir": "./data/sim-lift_bottle/default-ee-balanced-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "ee",
+        "state_action_layout": "ee_xyzquat_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_HDMI-default-ee-balanced-50": {
+        "dataset_dir": "./data/sim-insert_HDMI/default-ee-balanced-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "ee",
+        "state_action_layout": "ee_xyzquat_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_hole-default-ee-balanced-50": {
+        "dataset_dir": "./data/sim-insert_hole/default-ee-balanced-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "ee",
+        "state_action_layout": "ee_xyzquat_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-pull_out_key-default-ee-balanced-50": {
+        "dataset_dir": "./data/sim-pull_out_key/default-ee-balanced-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "ee",
+        "state_action_layout": "ee_xyzquat_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-lift_bottle-default-balanced-50": {
+        "dataset_dir": "./data/sim-lift_bottle/default-balanced-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "joint",
+        "state_action_layout": "joint7_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_HDMI-default-balanced-50": {
+        "dataset_dir": "./data/sim-insert_HDMI/default-balanced-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "joint",
+        "state_action_layout": "joint7_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_hole-default-balanced-50": {
+        "dataset_dir": "./data/sim-insert_hole/default-balanced-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "joint",
+        "state_action_layout": "joint7_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-pull_out_key-default-balanced-50": {
+        "dataset_dir": "./data/sim-pull_out_key/default-balanced-50",
+        "num_episodes": 50,
+        "episode_len": 1000,
+        "control_mode": "joint",
+        "state_action_layout": "joint7_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-lift_bottle-default-balanced-100": {
+        "dataset_dir": "./data/sim-lift_bottle/default-balanced-100",
+        "num_episodes": 100,
+        "episode_len": 1000,
+        "control_mode": "joint",
+        "state_action_layout": "joint7_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_HDMI-default-balanced-100": {
+        "dataset_dir": "./data/sim-insert_HDMI/default-balanced-100",
+        "num_episodes": 100,
+        "episode_len": 1000,
+        "control_mode": "joint",
+        "state_action_layout": "joint7_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-insert_hole-default-balanced-100": {
+        "dataset_dir": "./data/sim-insert_hole/default-balanced-100",
+        "num_episodes": 100,
+        "episode_len": 1000,
+        "control_mode": "joint",
+        "state_action_layout": "joint7_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    },
+    "sim-pull_out_key-default-balanced-100": {
+        "dataset_dir": "./data/sim-pull_out_key/default-balanced-100",
+        "num_episodes": 100,
+        "episode_len": 1000,
+        "control_mode": "joint",
+        "state_action_layout": "joint7_gripper",
+        "demo_selection": "stratified",
+        "demo_selection_seed": 0,
+        "camera_names": [
+            "cam_high",
+            "tac_left",
+            "tac_right"
+        ]
+    }
+}

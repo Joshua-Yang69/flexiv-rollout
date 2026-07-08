@@ -1,0 +1,90 @@
+perception:
+  runtime:
+    fps: 30
+    max_state_skew_ms: 5
+    publish_visual: true
+    publish_tactile: true
+  arm:
+    driver: mock
+    flexiv:
+      robot_id: Rizon4s-063231
+      tool_name: Flange
+      auto_enable: true
+      operational_wait_s: 10
+      tcp_mode_on_start: true
+  gripper:
+    driver: mock
+    mock_width_m: 0.04
+    xense:
+      device_id: 5e77ff097831
+  visual:
+    enabled: true
+    driver: mock
+    realsense:
+      serial:
+      width: 640
+      height: 480
+      fps: 30
+      enable_color: true
+      enable_depth: true
+      align_depth_to_color: true
+  tactile:
+    enabled: true
+    driver: mock
+    xense:
+      device_id:
+      ip_address:
+      mac_addr:
+      config_path:
+      video_path:
+      use_gpu: false
+
+model_server:
+  runtime:
+    fps: 30
+    observation_timeout_s: 1
+    publish_hold_on_error: false
+  policy:
+    type: constant_hold
+    act:
+      device: cuda:0
+      control_mode: joint
+      camera_names:
+        - cam_high
+      tactile_names:
+        - tac_left
+        - tac_right
+      image_size: 256
+      normalize_visual: true
+      model_args:
+        device: cuda:0
+        chunk_size: 1
+        state_dim: 8
+        camera_names:
+          - cam_high
+        tactile_names:
+          - tac_left
+          - tac_right
+    vt_muse:
+      checkpoint:
+      freeze_encoder: true
+      device: cuda:0
+
+control:
+  runtime:
+    fps: 50
+    max_action_age_ms: 250
+    allow_joint_commands: false
+    max_linear_vel: 0.1
+    max_linear_acc: 0.5
+    max_angular_vel: 0.1
+    max_angular_acc: 0.5
+    gripper_velocity_m_s: 0.08
+    gripper_force_n: 27
+    safety:
+      max_tcp_translation_step_m: 0.02
+      max_joint_step_rad: 0.05
+      gripper_min_width_m: 0.0
+      gripper_max_width_m: 0.085
+      max_wrench_abs: 30
+
