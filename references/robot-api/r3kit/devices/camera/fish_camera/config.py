@@ -1,2 +1,0 @@
-FISH_CAMERA_FPS = 30
-

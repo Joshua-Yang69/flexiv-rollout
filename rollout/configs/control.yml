@@ -19,7 +19,7 @@ arm:
   driver: mock
   flexiv:
     robot_id: Rizon4s-063231
-    tool_name: Flange
+    tool_name: xense
     auto_enable: true
     operational_wait_s: 10
     tcp_mode_on_start: true
