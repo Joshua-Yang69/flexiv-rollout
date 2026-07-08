@@ -274,7 +274,7 @@ class XenseTactileClient:
         module = optional_import("xensesdk", "Install the Xense sensor SDK for tactile streaming.")
         self._sensor_cls = module.Sensor
         kwargs: dict[str, Any] = {}
-        for key in ("ip_address", "mac_addr", "config_path", "video_path", "use_gpu"):
+        for key in ("ip_address", "mac_addr", "config_path", "video_path"):
             value = getattr(config, key)
             if value is not None:
                 kwargs[key] = value

@@ -5,19 +5,19 @@ runtime:
   publish_tactile: true
 
 arm:
-  driver: mock
+  driver: flexiv
   flexiv:
-    robot_id: Rizon4s-063231
-    tool_name: Flange
+    robot_id: Rizon4s-063586
+    tool_name: xense
     auto_enable: true
     operational_wait_s: 10
     tcp_mode_on_start: true
 
 gripper:
-  driver: mock
+  driver: xense
   mock_width_m: 0.04
   xense:
-    device_id: 5e77ff097831
+    device_id: 1659f0e0dde0
     max_width_m: 0.085
     max_velocity_m_s: 0.35
     max_force_n: 60
@@ -26,9 +26,9 @@ gripper:
 
 visual:
   enabled: true
-  driver: mock
+  driver: realsense_d415
   realsense:
-    serial:
+    serial: "314522062078"
     width: 640
     height: 480
     fps: 30
@@ -38,13 +38,13 @@ visual:
 
 tactile:
   enabled: true
-  driver: mock
+  driver: xense
   xense:
-    ip_address:
-    config_path:
-    video_path:
-    use_gpu: false
-    fps: 50
+    # ip_address:
+    # config_path:
+    # video_path:
+    # use_gpu: false
+    fps: 30
   sensors:
     xense_left:
       device_id: OG001452

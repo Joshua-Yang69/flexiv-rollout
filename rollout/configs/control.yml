@@ -16,17 +16,17 @@ runtime:
     max_wrench_abs: 30
 
 arm:
-  driver: mock
+  driver: flexiv
   flexiv:
-    robot_id: Rizon4s-063231
+    robot_id: Rizon4s-063586
     tool_name: xense
     auto_enable: true
     operational_wait_s: 10
     tcp_mode_on_start: true
 
 gripper:
-  driver: mock
+  driver: xense
   mock_width_m: 0.04
   xense:
-    device_id: 5e77ff097831
+    device_id: 1659f0e0dde0
 
