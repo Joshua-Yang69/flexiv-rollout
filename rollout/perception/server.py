@@ -16,6 +16,7 @@ from rollout.perception.devices import (
 )
 from rollout.types import Observation, RobotState
 from utils.latest_buffer import LatestBuffer
+from utils.rolling_buffer import RollingBuffer
 from utils.timing import RateLimiter, now_ms
 
 
@@ -25,10 +26,16 @@ class PerceptionRuntimeConfig:
     max_state_skew_ms: float = 5.0
     publish_visual: bool = True
     publish_tactile: bool = True
+    history_capacity: int = 200  # frames to keep in rolling history buffer
 
 
 class StatePerceiver:
-    """Capture robot state and sensors into one latest observation stream."""
+    """Capture robot state and sensors into one latest observation stream.
+
+    In addition to ``output_buffer`` (latest-only), a ``history_buffer``
+    (RollingBuffer) is maintained so that temporal-model adapters (e.g.
+    VTMusePolicyAdapter) can sample strided windows of past observations.
+    """
 
     def __init__(
         self,
@@ -46,6 +53,12 @@ class StatePerceiver:
         self.output_buffer = output_buffer or LatestBuffer()
         self.config = config or PerceptionRuntimeConfig()
         self._stop = Event()
+
+        # Rolling history: keeps the last `history_capacity` observations so
+        # that inference threads can reconstruct temporal windows.
+        self.history_buffer: RollingBuffer = RollingBuffer(
+            capacity=self.config.history_capacity
+        )
 
     @property
     def latest(self) -> Observation | None:
@@ -80,6 +93,7 @@ class StatePerceiver:
             extras=extras,
         )
         self.output_buffer.put(observation)
+        self.history_buffer.put(observation)  # keep every frame in rolling history
         return observation
 
     def serve_forever(self, stop_event: Event | None = None) -> None:
@@ -111,4 +125,5 @@ def make_perceiver_from_config(config: dict[str, Any], output_buffer: LatestBuff
         output_buffer=output_buffer,
         config=runtime,
     )
+
 

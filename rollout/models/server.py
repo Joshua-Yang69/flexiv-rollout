@@ -7,6 +7,7 @@ from typing import Any
 from rollout.models.base import BasePolicy, build_policy_from_config
 from rollout.types import Observation, PolicyAction
 from utils.latest_buffer import LatestBuffer
+from utils.rolling_buffer import RollingBuffer
 from utils.timing import RateLimiter, now_ms
 
 
@@ -18,17 +19,36 @@ class ModelServerConfig:
 
 
 class PolicyModelServer:
-    """Persistent policy inference loop."""
+    """Persistent policy inference loop.
+
+    Parameters
+    ----------
+    policy:
+        A ``BasePolicy`` subclass (ACTPolicyAdapter, VTMusePolicyAdapter, …).
+    observation_buffer:
+        Latest-only buffer; updated by the perception thread every frame.
+    history_buffer:
+        Rolling buffer of past observations used by temporal policies (e.g.
+        VTMusePolicyAdapter) that need a strided frame window.  Optional; if
+        provided it is passed to the policy's ``infer_with_history`` method
+        when that method exists, otherwise ``infer`` is called normally.
+    action_buffer:
+        Latest-only buffer receiving the most recent PolicyAction.
+    config:
+        Runtime parameters (fps, timeout, …).
+    """
 
     def __init__(
         self,
         policy: BasePolicy,
         observation_buffer: LatestBuffer,
+        history_buffer: RollingBuffer | None = None,
         action_buffer: LatestBuffer | None = None,
         config: ModelServerConfig | None = None,
     ) -> None:
         self.policy = policy
         self.observation_buffer = observation_buffer
+        self.history_buffer = history_buffer
         self.action_buffer = action_buffer or LatestBuffer()
         self.config = config or ModelServerConfig()
         self._stop = Event()
@@ -52,7 +72,12 @@ class PolicyModelServer:
             return None
 
         try:
-            action = self.policy.infer(value)
+            # If the policy supports temporal-history inference, use it.
+            infer_with_history = getattr(self.policy, "infer_with_history", None)
+            if callable(infer_with_history) and self.history_buffer is not None:
+                action = infer_with_history(value, self.history_buffer)
+            else:
+                action = self.policy.infer(value)
         except Exception as exc:
             if not self.config.publish_hold_on_error:
                 raise
@@ -81,6 +106,7 @@ class PolicyModelServer:
 def make_model_server_from_config(
     config: dict[str, Any],
     observation_buffer: LatestBuffer,
+    history_buffer: RollingBuffer | None = None,
     action_buffer: LatestBuffer | None = None,
 ) -> PolicyModelServer:
     policy = build_policy_from_config(config.get("policy", {}))
@@ -88,7 +114,7 @@ def make_model_server_from_config(
     return PolicyModelServer(
         policy=policy,
         observation_buffer=observation_buffer,
+        history_buffer=history_buffer,
         action_buffer=action_buffer,
         config=server_config,
     )
-

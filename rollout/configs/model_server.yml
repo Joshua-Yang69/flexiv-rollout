@@ -4,10 +4,12 @@ runtime:
   publish_hold_on_error: false
 
 policy:
+  # type: constant_hold | act | vt_muse
   type: constant_hold
+
   act:
     device: cuda:0
-    control_mode: joint
+    control_mode: joint   # "joint" | "tcp"
     camera_names:
       - cam_high
     tactile_names:
@@ -16,16 +18,71 @@ policy:
     image_size: 256
     normalize_visual: true
     model_args:
+      # Required fields passed directly to ACT.__init__
       device: cuda:0
       chunk_size: 1
       state_dim: 8
+      kl_weight: 10
+      policy_class: ACT
+      task_name: flexiv_rollout
+      seed: 0
+      num_epochs: 1
+      # Checkpoint directory (contains policy_best.ckpt and dataset_stats.pkl)
+      ckpt_dir: ""
+      # Optional explicit paths (override ckpt_dir defaults)
+      # policy_checkpoint: ""
+      # stats_path: ""
       camera_names:
         - cam_high
       tactile_names:
         - tac_left
         - tac_right
+      temporal_agg: false
+      # ViTacDreamer feature fusion (set use_vitacdreamer_feature: true to enable)
+      use_vitacdreamer_feature: false
+      # vitacdreamer_checkpoint: ""
+
   vt_muse:
-    checkpoint:
+    # Path to trained ViTacDreamer Stage-2 encoder-only checkpoint (required)
+    checkpoint: ""
     freeze_encoder: true
     device: cuda:0
-
+    control_mode: joint
+    camera_names:
+      - cam_high
+    tactile_names:
+      - tac_left
+      - tac_right
+    image_size: 224
+    sample_stride: 5
+    # task_id: encoder task embedding index (0=insert_tube, 1=wipe_board)
+    task_id: 0
+    model_args:
+      device: cuda:0
+      policy_class: ACT
+      state_dim: 8
+      chunk_size: 15
+      kl_weight: 7.5
+      temporal_agg: true
+      hidden_dim: 512
+      dim_feedforward: 3200
+      nheads: 8
+      enc_layers: 4
+      dec_layers: 7
+      dropout: 0.025
+      backbone: resnet18
+      tactile_backbone: resnet18
+      position_embedding: sine
+      pre_norm: false
+      dilation: false
+      tactile_dilation: false
+      masks: false
+      tactile_masks: false
+      vitacdreamer_feature_dim: 512
+      vitacdreamer_fusion_mode: feature_query_policy_kv
+      vitacdreamer_cross_attn_layers: none
+      finetune_vitacdreamer_encoder: false
+      ckpt_dir: ""
+      seed: 0
+      num_epochs: 1
+      task_name: insert_tube

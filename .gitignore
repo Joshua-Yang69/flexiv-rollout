@@ -5,6 +5,8 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+code_reference/
+
 .venv/
 venv/
 env/
@@ -25,4 +27,8 @@ checkpoints/
 
 .env
 .env.*
+
+.claude/
+
+
 

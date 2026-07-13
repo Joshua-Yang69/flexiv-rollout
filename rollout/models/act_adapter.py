@@ -12,7 +12,7 @@ from utils.transforms import xyzquat_xyzw_to_mat
 
 
 class ACTPolicyAdapter(BasePolicy):
-    """Adapter around references/models/ACT for online rollout.
+    """Adapter around rollout/models/act for online rollout.
 
     The adapter keeps model loading persistent and converts this project's
     Observation contract into ACT's expected dict: qpos plus camera/tactile
@@ -32,10 +32,7 @@ class ACTPolicyAdapter(BasePolicy):
         self.model = None
 
     def load(self) -> None:
-        try:
-            from references.models.ACT.act_policy import ACT
-        except ImportError as exc:
-            raise RuntimeError("Could not import references.models.ACT.act_policy.ACT.") from exc
+        from rollout.models.act.act_policy import ACT
 
         self.model_args.setdefault("device", self.device)
         self.model_args.setdefault("camera_names", self.camera_names)

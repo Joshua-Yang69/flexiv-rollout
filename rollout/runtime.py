@@ -7,11 +7,11 @@ from threading import Event, Thread
 from typing import Any
 
 from rollout.control.executor import make_control_executor_from_config
+from rollout.control.pregrasp import PregraspConfig, run_pregrasp
 from rollout.models.server import make_model_server_from_config
 from rollout.perception.server import make_perceiver_from_config
 from utils.config import load_yaml
 from utils.latest_buffer import LatestBuffer
-
 
 @dataclass
 class RolloutRuntime:
@@ -21,6 +21,7 @@ class RolloutRuntime:
     perceiver: Any
     model_server: Any
     control_executor: Any
+    pregrasp_config: PregraspConfig | None = None
 
     def __post_init__(self) -> None:
         self._stop = Event()
@@ -33,9 +34,12 @@ class RolloutRuntime:
         result_buffer = LatestBuffer()
 
         perceiver = make_perceiver_from_config(config.get("perception", {}), output_buffer=observation_buffer)
+        # Wire the perceiver's rolling history buffer into the model server so
+        # temporal policies (VTMusePolicyAdapter) can sample strided windows.
         model_server = make_model_server_from_config(
             config.get("model_server", {}),
             observation_buffer=observation_buffer,
+            history_buffer=perceiver.history_buffer,
             action_buffer=action_buffer,
         )
         control_executor = make_control_executor_from_config(
@@ -46,6 +50,13 @@ class RolloutRuntime:
             arm=perceiver.arm,
             gripper=perceiver.gripper,
         )
+
+        # Optional pregrasp config
+        pregrasp_config: PregraspConfig | None = None
+        pg_data = config.get("pregrasp")
+        if pg_data:
+            pregrasp_config = PregraspConfig(**pg_data)
+
         return cls(
             observation_buffer=observation_buffer,
             action_buffer=action_buffer,
@@ -53,11 +64,22 @@ class RolloutRuntime:
             perceiver=perceiver,
             model_server=model_server,
             control_executor=control_executor,
+            pregrasp_config=pregrasp_config,
         )
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "RolloutRuntime":
         return cls.from_config(load_yaml(path))
+
+    def pregrasp(self) -> None:
+        """Execute pre-grasp (close gripper) before starting the rollout loops.
+
+        Uses the ``pregrasp`` section from the rollout config. If no config is
+        provided this is a no-op so that mock / simulation runs are unaffected.
+        """
+        if self.pregrasp_config is None:
+            return
+        run_pregrasp(self.perceiver.gripper, self.pregrasp_config)
 
     def start(self) -> None:
         self._threads = [
@@ -69,6 +91,7 @@ class RolloutRuntime:
             thread.start()
 
     def run(self, duration_s: float | None = None) -> None:
+        self.pregrasp()   # pre-grasp before starting inference loops
         self.start()
         try:
             if duration_s is None:
