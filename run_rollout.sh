@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
-# run_rollout.sh — 启动 ViTacACT 真机 rollout
+# run_rollout.sh — Launch ViTacACT real-robot rollout
 #
-# 用法
-# ----
-#   ./run_rollout.sh [选项]
+# Usage
+# -----
+#   ./run_rollout.sh [options]
 #
-# 选项
-# ----
-#   --config   PATH        rollout YAML 配置文件（默认: rollout/configs/rollout.yml）
-#   --task     TASK_NAME   任务名 insert_tube | wipe_board（覆盖 config 中的 task_id）
-#   --task-id  INT         任务 ID（--task 的数字形式，两者任选其一）
-#   --duration-s FLOAT     运行时长秒数（默认不限，Ctrl-C 结束）
-#   --skip-homing          跳过回零步骤（调试用）
-#   --dry-run              只打印参数，不实际执行
+# Options
+# -------
+#   --config     PATH    Rollout YAML config file (default: rollout/configs/rollout.yml)
+#   --task       NAME    Task name: insert_tube | wipe_board (overrides task_id in config)
+#   --task-id    INT     Task ID integer (alternative to --task; cannot use both)
+#   --duration-s FLOAT   Run duration in seconds (default: unlimited, stop with Ctrl-C)
+#   --skip-homing        Skip the homing step (useful for debugging)
+#   --dry-run            Print resolved parameters without executing anything
 #
-# 示例
-# ----
+# Examples
+# --------
 #   ./run_rollout.sh --task insert_tube
 #   ./run_rollout.sh --task wipe_board --duration-s 60
 #   ./run_rollout.sh --config my_config.yml --task insert_tube --skip-homing
 
 set -euo pipefail
 
-# ── 脚本位置 ──────────────────────────────────────────────────────────────────
+# ── Script location ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# ── 默认参数 ──────────────────────────────────────────────────────────────────
+# ── Defaults ───────────────────────────────────────────────────────────────────
 CONFIG="${SCRIPT_DIR}/rollout/configs/rollout.yml"
 TASK=""
 TASK_ID=""
@@ -33,7 +33,7 @@ DURATION_S=""
 SKIP_HOMING=0
 DRY_RUN=0
 
-# ── 参数解析 ──────────────────────────────────────────────────────────────────
+# ── Argument parsing ───────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --config)       CONFIG="$2";      shift 2 ;;
@@ -43,48 +43,54 @@ while [[ $# -gt 0 ]]; do
         --skip-homing)  SKIP_HOMING=1;    shift   ;;
         --dry-run)      DRY_RUN=1;        shift   ;;
         *)
-            echo "[ERROR] 未知参数: $1" >&2
-            echo "用法: $0 [--config PATH] [--task TASK] [--task-id INT] [--duration-s FLOAT] [--skip-homing] [--dry-run]" >&2
+            echo "[ERROR] Unknown argument: $1" >&2
+            echo "Usage: $0 [--config PATH] [--task NAME] [--task-id INT] [--duration-s FLOAT] [--skip-homing] [--dry-run]" >&2
             exit 1
             ;;
     esac
 done
 
-# ── 参数校验 ──────────────────────────────────────────────────────────────────
+# ── Validation ─────────────────────────────────────────────────────────────────
 if [[ ! -f "$CONFIG" ]]; then
-    echo "[ERROR] config 文件不存在: $CONFIG" >&2
+    echo "[ERROR] Config file not found: $CONFIG" >&2
     exit 1
 fi
 
 if [[ -n "$TASK" && -n "$TASK_ID" ]]; then
-    echo "[ERROR] --task 和 --task-id 不能同时指定" >&2
+    echo "[ERROR] --task and --task-id cannot be used together." >&2
     exit 1
 fi
 
-# ── 打印参数摘要 ──────────────────────────────────────────────────────────────
+# ── Parameter summary ──────────────────────────────────────────────────────────
 echo "============================================================"
 echo "  Flexiv ViTacACT Rollout"
 echo "============================================================"
 echo "  config     : $CONFIG"
-echo "  task       : ${TASK:-${TASK_ID:+(id=$TASK_ID)|(未指定，使用 config 默认)}}"
-echo "  duration   : ${DURATION_S:-无限制 (Ctrl-C 停止)}"
-echo "  homing     : $([ $SKIP_HOMING -eq 1 ] && echo '跳过' || echo '执行 (robot id=2)')"
+if [[ -n "$TASK" ]]; then
+    echo "  task       : $TASK"
+elif [[ -n "$TASK_ID" ]]; then
+    echo "  task       : (id=$TASK_ID)"
+else
+    echo "  task       : (not specified, using config default)"
+fi
+echo "  duration   : ${DURATION_S:-unlimited (Ctrl-C to stop)}"
+echo "  homing     : $([ $SKIP_HOMING -eq 1 ] && echo 'skipped' || echo 'enabled (robot id=2)')"
 echo "============================================================"
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] 参数检查通过，不实际执行。"
+    echo "[dry-run] Parameters look good. Exiting without execution."
     exit 0
 fi
 
-# ── Step 1: 机械臂回零 ────────────────────────────────────────────────────────
+# ── Step 1: Homing ─────────────────────────────────────────────────────────────
 if [[ $SKIP_HOMING -eq 0 ]]; then
     echo ""
-    echo "[homing] 正在对 robot id=2 (Rizon4s-063586) 执行回零 ..."
+    echo "[homing] Homing robot id=2 (Rizon4s-063586) ..."
     python "${SCRIPT_DIR}/utils/homing.py" --id 2
-    echo "[homing] 回零完成。"
+    echo "[homing] Homing complete."
 fi
 
-# ── Step 2: 构造 run_rollout.py 命令 ─────────────────────────────────────────
+# ── Step 2: Build run_rollout.py command ───────────────────────────────────────
 CMD=(python "${SCRIPT_DIR}/rollout/run_rollout.py" --config "$CONFIG")
 
 if [[ -n "$TASK" ]]; then
@@ -97,8 +103,8 @@ if [[ -n "$DURATION_S" ]]; then
     CMD+=(--duration-s "$DURATION_S")
 fi
 
-# ── Step 3: 启动 rollout ──────────────────────────────────────────────────────
+# ── Step 3: Launch rollout ─────────────────────────────────────────────────────
 echo ""
-echo "[rollout] 启动命令: ${CMD[*]}"
+echo "[rollout] Command: ${CMD[*]}"
 echo "------------------------------------------------------------"
 exec "${CMD[@]}"
