@@ -91,7 +91,18 @@ class RolloutRuntime:
             thread.start()
 
     def run(self, duration_s: float | None = None) -> None:
-        self.pregrasp()   # pre-grasp before starting inference loops
+        # ── 确认 1：pregrasp 前 ────────────────────────────────────────────────
+        if self.pregrasp_config is not None:
+            input(
+                "\n[确认] 请将物体放置到位，然后按 Enter 开始 pregrasp（夹爪闭合）… "
+            )
+            self.pregrasp()
+
+            # ── 确认 2：rollout 前 ────────────────────────────────────────────
+            input(
+                "\n[确认] Pregrasp 完成。确认夹持状态后按 Enter 开始 rollout… "
+            )
+
         self.start()
         try:
             if duration_s is None:
