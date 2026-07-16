@@ -8,23 +8,29 @@ perception:
     # VTMusePolicyAdapter uses stride=5, so history_len=5 needs 25 frames minimum.
     history_capacity: 150
   arm:
-    driver: mock
+    driver: flexiv
     flexiv:
-      robot_id: Rizon4s-063231
-      tool_name: Flange
+      robot_id: Rizon4s-063586
+      tool_name: xense
       auto_enable: true
       operational_wait_s: 10
-      tcp_mode_on_start: true
+      tcp_mode_on_start: false
   gripper:
-    driver: mock
+    driver: xense
     mock_width_m: 0.04
     xense:
-      device_id: 5e77ff097831
+      device_id: 1659f0e0dde0
+      # ax_width_m: 0.085
+      max_velocity_m_s: 0.35
+      max_force_n: 60
+      blocking_timeout_s: -1
+      blocking_tolerance_mm: 1
+
   visual:
     enabled: true
-    driver: mock
+    driver: realsense_d415
     realsense:
-      serial:
+      serial: "314522062078"
       width: 640
       height: 480
       fps: 30
@@ -33,13 +39,13 @@ perception:
       align_depth_to_color: true
   tactile:
     enabled: true
-    driver: mock
+    driver: xense
     xense:
-      ip_address:
-      config_path:
-      video_path:
-      use_gpu: false
-      fps: 50
+      # ip_address:
+      # config_path:
+      # video_path:
+      # use_gpu: false
+      fps: 30
     sensors:
       xense_left:
         device_id: OG001452
@@ -51,8 +57,8 @@ perception:
 # Pre-grasp: close gripper before policy inference starts.
 # Remove or set to null to skip pre-grasp (e.g. in simulation).
 pregrasp:
-  grasp_width_m: 0.03        # metres — finger gap at grasp; tune per object
-  velocity_m_s: 0.04         # closing speed (slow for delicate objects)
+  grasp_width_m: 0.02        # metres — finger gap at grasp; tune per object
+  velocity_m_s: 0.1         # closing speed (slow for delicate objects)
   force_n: 20.0              # contact force limit (N)
   wait_after_s: 0.5          # settle time before inference begins (s)
   blocking_timeout_s: 5.0    # max wait for gripper convergence (s)
@@ -64,34 +70,47 @@ model_server:
     observation_timeout_s: 1
     publish_hold_on_error: false
   policy:
-    type: constant_hold
+    type: act
     act:
       device: cuda:0
       control_mode: joint
       camera_names:
         - cam_high
-      tactile_names:
-        - tac_left
-        - tac_right
+      tactile_names: []
+        # - tac_left
+        # - tac_right
       image_size: 256
       normalize_visual: true
       model_args:
         device: cuda:0
-        chunk_size: 1
+        chunk_size: 15
         state_dim: 8
-        kl_weight: 10
+        kl_weight: 7.5
         policy_class: ACT
         task_name: flexiv_rollout
         seed: 0
         num_epochs: 1
-        ckpt_dir: ""
+        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/ViTacDreamer_real_ACT_baselines_20260713/vision_only/insert_tube"
         camera_names:
           - cam_high
-        tactile_names:
-          - tac_left
-          - tac_right
-        temporal_agg: false
+        tactile_names: []
+          # - tac_left
+          # - tac_right
+        temporal_agg: true
         use_vitacdreamer_feature: false
+        hidden_dim: 512
+        dim_feedforward: 3200
+        backbone: resnet18
+        nheads: 8
+        enc_layers: 4
+        dec_layers: 7
+        dropout: 0.025
+        position_embedding: sine
+        pre_norm: false
+        dilation: false
+        masks: false
+        lr_vision_backbone: 0.0
+        lr_tactile_backbone: 0.0
     vt_muse:
       # Path to trained ViTacDreamer Stage-2 encoder-only checkpoint (required)
       checkpoint: ""

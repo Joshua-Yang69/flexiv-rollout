@@ -30,5 +30,9 @@ checkpoints/
 
 .claude/
 
+*.pkl
 
+logs
+.logs.*
+detr.egg-info/
 

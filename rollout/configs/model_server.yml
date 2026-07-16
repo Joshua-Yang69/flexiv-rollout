@@ -5,41 +5,54 @@ runtime:
 
 policy:
   # type: constant_hold | act | vt_muse
-  type: constant_hold
+  type: act
 
   act:
     device: cuda:0
     control_mode: joint   # "joint" | "tcp"
     camera_names:
       - cam_high
-    tactile_names:
-      - tac_left
-      - tac_right
+    tactile_names: []
+      # - tac_left
+      # - tac_right
     image_size: 256
     normalize_visual: true
     model_args:
       # Required fields passed directly to ACT.__init__
       device: cuda:0
-      chunk_size: 1
+      chunk_size: 15
       state_dim: 8
-      kl_weight: 10
+      kl_weight: 7.5
       policy_class: ACT
       task_name: flexiv_rollout
       seed: 0
       num_epochs: 1
       # Checkpoint directory (contains policy_best.ckpt and dataset_stats.pkl)
-      ckpt_dir: ""
+      ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/ViTacDreamer_real_ACT_baselines_20260713/vision_only/insert_tube"
       # Optional explicit paths (override ckpt_dir defaults)
       # policy_checkpoint: ""
       # stats_path: ""
       camera_names:
         - cam_high
-      tactile_names:
-        - tac_left
-        - tac_right
-      temporal_agg: false
+      tactile_names: []
+        # - tac_left
+        # - tac_right
+      temporal_agg: true
       # ViTacDreamer feature fusion (set use_vitacdreamer_feature: true to enable)
       use_vitacdreamer_feature: false
+      hidden_dim: 512
+      dim_feedforward: 3200
+      backbone: resnet18
+      nheads: 8
+      enc_layers: 4
+      dec_layers: 7
+      dropout: 0.025
+      position_embedding: sine
+      pre_norm: false
+      dilation: false
+      masks: false
+      lr_vision_backbone: 0.0
+      lr_tactile_backbone: 0.0
       # vitacdreamer_checkpoint: ""
 
   vt_muse:
