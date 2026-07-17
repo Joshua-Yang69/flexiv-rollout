@@ -93,6 +93,7 @@ class VTMusePolicyAdapter(BasePolicy):
         model_args.setdefault("tactile_names", self.tactile_names)
         model_args["use_vitacdreamer_feature"] = True
         model_args.setdefault("vitacdreamer_checkpoint", checkpoint)
+        model_args.setdefault("vitacdreamer_feature_cache_dir", "__external__")
         model_args.pop("vitacdreamer_feature_cache_dir", None)
 
         self.act_model = ACT(model_args)

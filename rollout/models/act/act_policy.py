@@ -184,10 +184,13 @@ class ACT:
             # Load policy weights
             ckpt_path = explicit_ckpt_path or os.path.join(ckpt_dir, "policy_best.ckpt")
             if not os.path.exists(ckpt_path):
-                ckpt_path = os.path.join(ckpt_dir, "policy_last.ckpt")
+                ckpt_path = os.path.join(ckpt_dir, "policy_best.ckpt")
             print("current pwd:", os.getcwd())
             if os.path.exists(ckpt_path):
-                checkpoint_state = torch.load(ckpt_path)
+                print(f"[TEST]Loading policy checkpoint from {ckpt_path}")
+                checkpoint_state = torch.load(ckpt_path, map_location='cpu')
+                print(f"[TEST] Loading Checkpoint on CPU")
+                # checkpoint_state = torch.load(ckpt_path)
                 loading_status = self.policy.load_state_dict(checkpoint_state, strict=False)
                 unexpected = list(loading_status.unexpected_keys)
                 missing = list(loading_status.missing_keys)

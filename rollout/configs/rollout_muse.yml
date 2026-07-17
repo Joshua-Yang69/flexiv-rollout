@@ -90,7 +90,7 @@ model_server:
         task_name: flexiv_rollout
         seed: 0
         num_epochs: 1
-        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/vitac_ckpts/act-insert_tube/real-100/train_config_actbaseline_real2_vision_tactile_100_16k"
+        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/checkpoints/vitac_ckpts/act-insert_tube/real-100/train_config_actbaseline_real2_vision_tactile_100_16k"
         camera_names:
           - cam_high
         tactile_names:
@@ -115,7 +115,7 @@ model_server:
         tactile_masks: false
     vt_muse:
       # Path to trained ViTacDreamer Stage-2 encoder-only checkpoint (required)
-      checkpoint: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/stage2_prior512_hlen5_depthdelta_80train20val/stage2_v2_encoder_only.pth"
+      checkpoint: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/checkpoints/stage2_prior512_hlen5_depthdelta_80train20val/stage2_v2_encoder_only.pth"
       freeze_encoder: true
       device: cuda:0
       control_mode: joint
@@ -146,21 +146,24 @@ model_server:
         dec_layers: 7
         dropout: 0.025
         backbone: resnet18
+        tactile_ckpt: None
         tactile_backbone: resnet18
         position_embedding: sine
         pre_norm: false
         dilation: false
         tactile_dilation: false
         masks: false
+        lr_vision_backbone: 0.0
+        lr_tactile_backbone: 0.0
         tactile_masks: false
         # ── ViTacDreamer fusion ───────────────────────────────────────────────
         vitacdreamer_feature_dim: 512    # latent_dim from Stage2 encoder
         vitacdreamer_fusion_mode: feature_query_policy_kv
-        vitacdreamer_cross_attn_layers: none
+        vitacdreamer_cross_attn_layers: middle
         finetune_vitacdreamer_encoder: false
         # use_vitacdreamer_feature is forced to true by VTMusePolicyAdapter.load()
         # ── checkpoint ───────────────────────────────────────────────────────
-        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/vitac_ckpts/act-insert_tube/real-100/train_config_actbaseline_real2_vision_tactile_100_16k"          # directory with policy_best.ckpt + dataset_stats.pkl
+        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/checkpoints/train_config_vitacdreamer_real2_stage2_depthdelta_insert_tube_100_16k"          # directory with policy_best.ckpt + dataset_stats.pkl
         seed: 0
         num_epochs: 1
         task_name: insert_tube   # used for internal ACT logging; set per task

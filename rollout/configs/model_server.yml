@@ -5,7 +5,7 @@ runtime:
 
 policy:
   # type: constant_hold | act | vt_muse
-  type: act
+  type: vt_muse
 
   act:
     device: cuda:0
@@ -57,7 +57,7 @@ policy:
 
   vt_muse:
     # Path to trained ViTacDreamer Stage-2 encoder-only checkpoint (required)
-    checkpoint: ""
+    checkpoint: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/checkpoints/stage2_prior512_hlen5_depthdelta_80train20val/stage2_v2_encoder_only.pth"
     freeze_encoder: true
     device: cuda:0
     control_mode: joint
@@ -66,17 +66,21 @@ policy:
     tactile_names:
       - tac_left
       - tac_right
-    image_size: 224
+    image_size: 224          # ViTacDreamer native resolution (224 x 224)
+    # Frame stride for history sampling: 5 frames @ 30 Hz = 6 Hz slots.
+    # Must match Stage1/Stage2 training sample_stride=5.
     sample_stride: 5
-    # task_id: encoder task embedding index (0=insert_tube, 1=wipe_board)
+    # task_id: integer index into the encoder's task embedding table.
+    # Real encoder task order: 0=insert_tube, 1=wipe_board
     task_id: 0
     model_args:
       device: cuda:0
+      # ── ACT architecture (must match training config) ─────────────────────
       policy_class: ACT
-      state_dim: 8
-      chunk_size: 15
-      kl_weight: 7.5
-      temporal_agg: true
+      state_dim: 8                     # joint7 + gripper
+      chunk_size: 15                   # training: chunk_size=15
+      kl_weight: 7.5                   # training: kl_weight=7.5
+      temporal_agg: true               # training: temporal_agg=true
       hidden_dim: 512
       dim_feedforward: 3200
       nheads: 8
@@ -84,18 +88,25 @@ policy:
       dec_layers: 7
       dropout: 0.025
       backbone: resnet18
+      tactile_ckpt: None
       tactile_backbone: resnet18
       position_embedding: sine
       pre_norm: false
       dilation: false
       tactile_dilation: false
       masks: false
+      lr_vision_backbone: 0.0
+      lr_tactile_backbone: 0.0
       tactile_masks: false
-      vitacdreamer_feature_dim: 512
+      # ── ViTacDreamer fusion ───────────────────────────────────────────────
+      vitacdreamer_feature_dim: 512    # latent_dim from Stage2 encoder
       vitacdreamer_fusion_mode: feature_query_policy_kv
       vitacdreamer_cross_attn_layers: none
       finetune_vitacdreamer_encoder: false
-      ckpt_dir: ""
+      # use_vitacdreamer_feature is forced to true by VTMusePolicyAdapter.load()
+      # ── checkpoint ───────────────────────────────────────────────────────
+      ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/checkpoints/vitac_ckpts/act-insert_tube/real-100/train_config_actbaseline_real2_vision_tactile_100_16k"          # directory with policy_best.ckpt + dataset_stats.pkl
       seed: 0
       num_epochs: 1
-      task_name: insert_tube
+      task_name: insert_tube   # used for internal ACT logging; set per task
+

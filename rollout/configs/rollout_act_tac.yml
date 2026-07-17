@@ -76,9 +76,9 @@ model_server:
       control_mode: joint
       camera_names:
         - cam_high
-      tactile_names: []
-        # - tac_left
-        # - tac_right
+      tactile_names:
+        - tac_left
+        - tac_right
       image_size: 256
       normalize_visual: true
       model_args:
@@ -90,16 +90,17 @@ model_server:
         task_name: flexiv_rollout
         seed: 0
         num_epochs: 1
-        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/ViTacDreamer_real_ACT_baselines_20260713/vision_only/insert_tube"
+        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/checkpoints/ViTacDreamer_real_ACT_baselines_20260713/vision_tactile/insert_tube"
         camera_names:
           - cam_high
-        tactile_names: []
-          # - tac_left
-          # - tac_right
+        tactile_names:
+          - tac_left
+          - tac_right
         temporal_agg: true
         use_vitacdreamer_feature: false
         hidden_dim: 512
         dim_feedforward: 3200
+        tactile_ckpt: None
         backbone: resnet18
         tactile_backbone: resnet18
         nheads: 8

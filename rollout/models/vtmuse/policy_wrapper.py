@@ -87,7 +87,7 @@ class ViTacDreamerFeatureExtractor(nn.Module):
 
         checkpoint = torch.load(checkpoint_path, map_location=device)
         state_dict = checkpoint.get("model_state_dict", checkpoint)
-        state_dict = _normalize_vit_state_dict_keys(state_dict)
+        # state_dict = _normalize_vit_state_dict_keys(state_dict)
         self.model_type = self._infer_model_type(state_dict)
         decoder_prefixes = ("decoder.", "tactile_flow_decoder.", "depth_delta_decoder.", "marker_flow_decoder.")
         encoder_only = not any(key.startswith(decoder_prefixes) for key in state_dict)

@@ -90,7 +90,7 @@ model_server:
         task_name: flexiv_rollout
         seed: 0
         num_epochs: 1
-        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/ViTacDreamer_real_ACT_baselines_20260713/vision_only/insert_tube"
+        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/checkpoints/ViTacDreamer_real_ACT_baselines_20260713/vision_only/insert_tube"
         camera_names:
           - cam_high
         tactile_names: []
