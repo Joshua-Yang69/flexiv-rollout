@@ -28,7 +28,8 @@ class Transformer(nn.Module):
                  activation="relu",
                  normalize_before=False,
                  return_intermediate_dec=False,
-                 vitac_cross_attn_layers=None):
+                 vitac_cross_attn_layers=None,
+                 vitacdreamer_fusion_mode=None):
         super().__init__()
 
         encoder_layer = TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout, activation, normalize_before)
@@ -47,10 +48,41 @@ class Transformer(nn.Module):
                                           decoder_norm,
                                           return_intermediate=return_intermediate_dec)
 
-        self._reset_parameters()
-
         self.d_model = d_model
         self.nhead = nhead
+        self.vitacdreamer_fusion_mode = vitacdreamer_fusion_mode
+
+        # "feature_query_policy_kv" fusion: vitacdreamer feature acts as Q,
+        # policy encoder memory acts as K/V.  These modules are only created
+        # when this mode is active so that checkpoints trained without it are
+        # not affected.
+        if vitacdreamer_fusion_mode == "feature_query_policy_kv":
+            # Learnable positional embedding for the single vitacdreamer token
+            self.vitacdreamer_feature_pos_embed = nn.Parameter(torch.zeros(1, 1, d_model))
+            # Project encoder memory to keys and values (LayerNorm + Linear)
+            self.vitacdreamer_policy_key_proj = nn.Sequential(
+                nn.LayerNorm(d_model),
+                nn.Linear(d_model, d_model),
+            )
+            self.vitacdreamer_policy_value_proj = nn.Sequential(
+                nn.LayerNorm(d_model),
+                nn.Linear(d_model, d_model),
+            )
+            # Cross-attention: vitacdreamer feature token attends to policy memory
+            self.vitacdreamer_feature_cross_attn = nn.MultiheadAttention(
+                d_model, nhead, dropout=dropout
+            )
+            self.vitacdreamer_feature_norm1 = nn.LayerNorm(d_model)
+            # Post-attention FFN
+            self.vitacdreamer_feature_ffn = nn.Sequential(
+                nn.Linear(d_model, dim_feedforward),
+                nn.GELU(),
+                nn.Dropout(dropout),
+                nn.Linear(dim_feedforward, d_model),
+            )
+            self.vitacdreamer_feature_norm2 = nn.LayerNorm(d_model)
+
+        self._reset_parameters()
 
     def _reset_parameters(self):
         for p in self.parameters():
@@ -109,6 +141,37 @@ class Transformer(nn.Module):
             cross_memory=vitac_memory,
             cross_attn_gate=vitac_gate,
         )
+
+        # feature_query_policy_kv: vitacdreamer feature (Q) cross-attends to
+        # the policy encoder output (K, V), then the attended token is appended
+        # to encoder memory so the decoder can also attend to it.
+        if self.vitacdreamer_fusion_mode == "feature_query_policy_kv" and vitac_memory is not None:
+            # vitac_memory: (1, B, d_model) – single projected vitacdreamer token
+            vitac_q = vitac_memory + self.vitacdreamer_feature_pos_embed  # (1, B, D)
+
+            # Project encoder memory to K and V (operates on last dim, seq-first ok)
+            policy_k = self.vitacdreamer_policy_key_proj(memory)   # (L, B, D)
+            policy_v = self.vitacdreamer_policy_value_proj(memory)  # (L, B, D)
+
+            # Cross-attention
+            vitac_attn_out, _ = self.vitacdreamer_feature_cross_attn(vitac_q, policy_k, policy_v)
+            # Apply gate (same convention as per-layer cross-attn in encoder layers)
+            if vitac_gate is not None:
+                vitac_attn_out = vitac_gate * vitac_attn_out
+            vitac_out = self.vitacdreamer_feature_norm1(vitac_q + vitac_attn_out)  # (1, B, D)
+
+            # FFN + residual
+            vitac_out = self.vitacdreamer_feature_norm2(
+                vitac_out + self.vitacdreamer_feature_ffn(vitac_out)
+            )  # (1, B, D)
+
+            # Append vitacdreamer token to memory so the decoder can attend to it.
+            # mask is None in practice (detr_vae passes None), so no mask adjustment
+            # needed. Extend pos_embed with zeros for the new token slot.
+            vitac_pos = pos_embed.new_zeros(1, bs, self.d_model)
+            memory = torch.cat([memory, vitac_out], dim=0)
+            pos_embed = torch.cat([pos_embed, vitac_pos], dim=0)
+
         hs = self.decoder(tgt, memory, memory_key_padding_mask=mask, pos=pos_embed, query_pos=query_embed)
         hs = hs.transpose(1, 2)
         return hs
@@ -436,6 +499,8 @@ def _resolve_cross_attn_layers(layer_spec, num_layers):
 
 
 def build_transformer(args):
+    use_vitac = getattr(args, "use_vitacdreamer_feature", False)
+    fusion_mode = getattr(args, "vitacdreamer_fusion_mode", None)
     return Transformer(
         d_model=args.hidden_dim,
         dropout=args.dropout,
@@ -446,8 +511,9 @@ def build_transformer(args):
         normalize_before=args.pre_norm,
         return_intermediate_dec=True,
         vitac_cross_attn_layers=getattr(args, "vitacdreamer_cross_attn_layers", "middle")
-        if getattr(args, "use_vitacdreamer_feature", False)
+        if use_vitac and fusion_mode != "feature_query_policy_kv"
         else None,
+        vitacdreamer_fusion_mode=fusion_mode if use_vitac else None,
     )
 
 

@@ -96,6 +96,25 @@ class VTMusePolicyAdapter(BasePolicy):
         model_args.setdefault("vitacdreamer_feature_cache_dir", "__external__")
         model_args.pop("vitacdreamer_feature_cache_dir", None)
 
+        # Auto-detect fusion mode from the ACT policy checkpoint when the user
+        # has not explicitly configured it.  Checkpoints trained with
+        # ``feature_query_policy_kv`` carry Transformer-level cross-attention
+        # modules (``model.transformer.vitacdreamer_feature_cross_attn.*``).
+        # Detecting this avoids a RuntimeError on load while remaining backward-
+        # compatible with older ``vitac_cross_attn_layers`` checkpoints.
+        if "vitacdreamer_fusion_mode" not in model_args:
+            import os, torch as _torch
+            ckpt_dir = model_args.get("ckpt_dir", "")
+            policy_ckpt = model_args.get("policy_checkpoint") or (
+                os.path.join(ckpt_dir, "policy_best.ckpt") if ckpt_dir else ""
+            )
+            if policy_ckpt and os.path.exists(policy_ckpt):
+                _ckpt = _torch.load(policy_ckpt, map_location="cpu")
+                _keys = set((_ckpt.get("model_state_dict", _ckpt) if isinstance(_ckpt, dict) else _ckpt).keys())
+                if any("transformer.vitacdreamer_feature_cross_attn" in k for k in _keys):
+                    model_args["vitacdreamer_fusion_mode"] = "feature_query_policy_kv"
+                    model_args.setdefault("vitacdreamer_cross_attn_layers", "none")
+
         self.act_model = ACT(model_args)
 
     def reset(self) -> None:

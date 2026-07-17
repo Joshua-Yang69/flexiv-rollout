@@ -143,6 +143,7 @@ def build_ACT_model_and_optimizer(args_override, RoboTwin_Config=None):
                 'dilation': False,
                 'pre_norm': False,
                 'vitacdreamer_cross_attn_layers': 'middle',
+                'vitacdreamer_fusion_mode': None,
                 'masks': False,
                 'eval': False,
                 'onscreen_render': False,
