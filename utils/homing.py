@@ -38,6 +38,19 @@ def parse_args():
     return parser.parse_args()
 
 
+def open_xense_gripper(device_id: str = "1659f0e0dde0") -> None:
+    """Open the Xense gripper to its maximum width."""
+    import sys
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]))
+    from rollout.perception.devices import XenseGripperClient, XenseGripperConfig
+
+    config = XenseGripperConfig(device_id=device_id)
+    gripper = XenseGripperClient(config)
+    print(f"Opening Xense gripper (device_id={device_id}) ...")
+    gripper.move(width_m=config.max_width_m)
+    print("Gripper open.")
+
+
 def main():
     args = parse_args()
     if args.robot_id == 1:
@@ -50,6 +63,10 @@ def main():
     tool_name = _SN_TOOL_MAP[robot_sn]
     print(f"Homing robot {args.robot_id}: {robot_sn}")
     home_robot(robot_sn, tool_name)
+
+    if args.robot_id == 2:
+        open_xense_gripper()
+
     print("Homing command finished")
 
 
