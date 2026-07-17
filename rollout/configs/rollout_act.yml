@@ -101,6 +101,7 @@ model_server:
         hidden_dim: 512
         dim_feedforward: 3200
         backbone: resnet18
+        tactile_backbone: resnet18
         nheads: 8
         enc_layers: 4
         dec_layers: 7
@@ -111,6 +112,7 @@ model_server:
         masks: false
         lr_vision_backbone: 0.0
         lr_tactile_backbone: 0.0
+        tactile_masks: false
     vt_muse:
       # Path to trained ViTacDreamer Stage-2 encoder-only checkpoint (required)
       checkpoint: ""

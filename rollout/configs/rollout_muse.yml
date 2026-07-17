@@ -1,0 +1,184 @@
+perception:
+  runtime:
+    fps: 30
+    max_state_skew_ms: 5
+    publish_visual: true
+    publish_tactile: true
+    # Keep 150 frames (~5 s @ 30 Hz) in rolling history for temporal models.
+    # VTMusePolicyAdapter uses stride=5, so history_len=5 needs 25 frames minimum.
+    history_capacity: 150
+  arm:
+    driver: flexiv
+    flexiv:
+      robot_id: Rizon4s-063586
+      tool_name: xense
+      auto_enable: true
+      operational_wait_s: 10
+      tcp_mode_on_start: false
+  gripper:
+    driver: xense
+    mock_width_m: 0.04
+    xense:
+      device_id: 1659f0e0dde0
+      # ax_width_m: 0.085
+      max_velocity_m_s: 0.35
+      max_force_n: 60
+      blocking_timeout_s: -1
+      blocking_tolerance_mm: 1
+
+  visual:
+    enabled: true
+    driver: realsense_d415
+    realsense:
+      serial: "314522062078"
+      width: 640
+      height: 480
+      fps: 30
+      enable_color: true
+      enable_depth: true
+      align_depth_to_color: true
+  tactile:
+    enabled: true
+    driver: xense
+    xense:
+      # ip_address:
+      # config_path:
+      # video_path:
+      # use_gpu: false
+      fps: 30
+    sensors:
+      xense_left:
+        device_id: OG001452
+        mac_addr: 1659f0e0dde0
+      xense_right:
+        device_id: OG001454
+        mac_addr: 1659f0e0dde0
+
+# Pre-grasp: close gripper before policy inference starts.
+# Remove or set to null to skip pre-grasp (e.g. in simulation).
+pregrasp:
+  grasp_width_m: 0.02        # metres — finger gap at grasp; tune per object
+  velocity_m_s: 0.1         # closing speed (slow for delicate objects)
+  force_n: 20.0              # contact force limit (N)
+  wait_after_s: 0.5          # settle time before inference begins (s)
+  blocking_timeout_s: 5.0    # max wait for gripper convergence (s)
+  require_success: false     # if true, abort rollout if gripper times out
+
+model_server:
+  runtime:
+    fps: 30
+    observation_timeout_s: 1
+    publish_hold_on_error: false
+  policy:
+    type: vt_muse
+    act:
+      device: cuda:0
+      control_mode: joint
+      camera_names:
+        - cam_high
+      tactile_names:
+        - tac_left
+        - tac_right
+      image_size: 256
+      normalize_visual: true
+      model_args:
+        device: cuda:0
+        chunk_size: 15
+        state_dim: 8
+        kl_weight: 7.5
+        policy_class: ACT
+        task_name: flexiv_rollout
+        seed: 0
+        num_epochs: 1
+        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/vitac_ckpts/act-insert_tube/real-100/train_config_actbaseline_real2_vision_tactile_100_16k"
+        camera_names:
+          - cam_high
+        tactile_names:
+          - tac_left
+          - tac_right
+        temporal_agg: true
+        use_vitacdreamer_feature: false
+        hidden_dim: 512
+        dim_feedforward: 3200
+        backbone: resnet18
+        tactile_backbone: resnet18
+        nheads: 8
+        enc_layers: 4
+        dec_layers: 7
+        dropout: 0.025
+        position_embedding: sine
+        pre_norm: false
+        dilation: false
+        masks: false
+        lr_vision_backbone: 0.0
+        lr_tactile_backbone: 0.0
+        tactile_masks: false
+    vt_muse:
+      # Path to trained ViTacDreamer Stage-2 encoder-only checkpoint (required)
+      checkpoint: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/stage2_prior512_hlen5_depthdelta_80train20val/stage2_v2_encoder_only.pth"
+      freeze_encoder: true
+      device: cuda:0
+      control_mode: joint
+      camera_names:
+        - cam_high
+      tactile_names:
+        - tac_left
+        - tac_right
+      image_size: 224          # ViTacDreamer native resolution (224 x 224)
+      # Frame stride for history sampling: 5 frames @ 30 Hz = 6 Hz slots.
+      # Must match Stage1/Stage2 training sample_stride=5.
+      sample_stride: 5
+      # task_id: integer index into the encoder's task embedding table.
+      # Real encoder task order: 0=insert_tube, 1=wipe_board
+      task_id: 0
+      model_args:
+        device: cuda:0
+        # ── ACT architecture (must match training config) ─────────────────────
+        policy_class: ACT
+        state_dim: 8                     # joint7 + gripper
+        chunk_size: 15                   # training: chunk_size=15
+        kl_weight: 7.5                   # training: kl_weight=7.5
+        temporal_agg: true               # training: temporal_agg=true
+        hidden_dim: 512
+        dim_feedforward: 3200
+        nheads: 8
+        enc_layers: 4
+        dec_layers: 7
+        dropout: 0.025
+        backbone: resnet18
+        tactile_backbone: resnet18
+        position_embedding: sine
+        pre_norm: false
+        dilation: false
+        tactile_dilation: false
+        masks: false
+        tactile_masks: false
+        # ── ViTacDreamer fusion ───────────────────────────────────────────────
+        vitacdreamer_feature_dim: 512    # latent_dim from Stage2 encoder
+        vitacdreamer_fusion_mode: feature_query_policy_kv
+        vitacdreamer_cross_attn_layers: none
+        finetune_vitacdreamer_encoder: false
+        # use_vitacdreamer_feature is forced to true by VTMusePolicyAdapter.load()
+        # ── checkpoint ───────────────────────────────────────────────────────
+        ckpt_dir: "/home/xense/MUSE_workspace/flexiv-rollout/rollout/models/vitac_ckpts/act-insert_tube/real-100/train_config_actbaseline_real2_vision_tactile_100_16k"          # directory with policy_best.ckpt + dataset_stats.pkl
+        seed: 0
+        num_epochs: 1
+        task_name: insert_tube   # used for internal ACT logging; set per task
+
+control:
+  runtime:
+    fps: 50
+    max_action_age_ms: 250
+    max_linear_vel: 0.1
+    max_linear_acc: 0.5
+    max_angular_vel: 0.1
+    max_angular_acc: 0.5
+    gripper_velocity_m_s: 0.08
+    gripper_force_n: 27
+    safety:
+      max_tcp_translation_step_m: 0.02
+      max_joint_step_rad: 0.05
+      gripper_min_width_m: 0.0
+      gripper_max_width_m: 0.085
+      max_wrench_abs: 30
+
